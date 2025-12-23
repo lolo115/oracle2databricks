@@ -26,14 +26,23 @@ pip install -r requirements.txt
 ### Command Line Usage
 
 ```bash
-# Translate a SQL file
-python cli.py translate examples/oracle_queries.sql --output output.sql
+# Convert any Oracle file (auto-detects SQL vs PL/SQL)
+python cli.py convert input.sql --output output.sql
 
-# Convert PL/SQL procedures
-python cli.py convert-plsql examples/oracle_procedures.sql --output databricks_procs.sql
+# Convert with verbose output
+python cli.py convert input.sql -o output.sql --verbose
 
-# Batch translate a directory (supports subdirectories with --recursive)
-python cli.py batch ./oracle_scripts ./databricks_output --recursive
+# Convert with detailed conversion report
+python cli.py convert input.sql -o output.sql --report
+
+# Convert with JSON report saved to file
+python cli.py convert input.sql -o out.sql --report --report-format json --report-output report.json
+
+# Batch convert a directory (auto-detects each file type)
+python cli.py batch ./oracle_scripts ./databricks_scripts --recursive
+
+# Batch convert with report
+python cli.py batch ./oracle_scripts ./databricks_scripts -r --report
 
 # Interactive mode
 python cli.py interactive
@@ -41,6 +50,22 @@ python cli.py interactive
 # Quick inline translation
 python cli.py inline "SELECT SYSDATE FROM DUAL"
 ```
+
+### Single File Conversion
+
+The `convert` command auto-detects whether the file contains SQL, PL/SQL, or mixed content:
+
+```bash
+python cli.py convert <input_file> [options]
+```
+
+**Options:**
+- `--output, -o`: Output file path (prints to stdout if not specified)
+- `--format, -f`: Format output SQL with indentation (default: True)
+- `--verbose, -v`: Show detailed conversion notes and suggestions
+- `--report, -R`: Generate a detailed conversion report after conversion
+- `--report-format`: Format for the conversion report (`text` or `json`, default: text)
+- `--report-output`: Write report to file instead of stdout
 
 ### Batch Processing
 
@@ -52,11 +77,25 @@ python cli.py batch <input_directory> <output_directory> [options]
 
 **Options:**
 - `--recursive, -r`: Process subdirectories recursively
-- `--report, -R`: Generate a detailed conversion report
+- `--report, -R`: Generate a detailed conversion report after batch processing
+- `--report-format`: Format for the conversion report (`text` or `json`, default: text)
+- `--report-output`: Write report to file instead of stdout
 
 **Supported file extensions:** `.sql`, `.pls`, `.pks`, `.pkb`, `.plb`, `.prc`, `.fnc`, `.trg`
 
-The batch command automatically detects whether each file contains SQL or PL/SQL and applies the appropriate conversion.
+The batch command automatically detects whether each file contains SQL, PL/SQL, or mixed content and applies the appropriate conversion.
+
+### Inline Translation
+
+Translate a single SQL statement directly from the command line:
+
+```bash
+python cli.py inline "SELECT SYSDATE FROM DUAL"
+```
+
+**Options:**
+- `--format, -f`: Format output SQL (default: True)
+- `--verbose, -v`: Show detailed conversion notes and suggestions
 
 ### Python API
 
