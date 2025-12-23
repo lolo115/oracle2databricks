@@ -126,8 +126,8 @@ print(result.converted_code)
 | Oracle | Databricks |
 |--------|------------|
 | `SYSDATE` | `CURRENT_TIMESTAMP()` |
-| `NVL(a, b)` | `COALESCE(a, b)` |
-| `NVL2(a, b, c)` | `IF(a IS NOT NULL, b, c)` |
+| `NVL(a, b)` | `NVL(a, b)` (native support) |
+| `NVL2(a, b, c)` | `NVL2(a, b, c)` (native support) |
 | `DECODE(...)` | `CASE WHEN ... END` |
 | `TO_NUMBER(x)` | `CAST(x AS DECIMAL)` |
 | `SUBSTR(s, p, l)` | `SUBSTRING(s, p, l)` |

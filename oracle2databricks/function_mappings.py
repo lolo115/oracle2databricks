@@ -10,8 +10,8 @@ DIRECT_FUNCTION_MAPPINGS = {
     # ==========================================
     # STRING FUNCTIONS
     # ==========================================
-    "NVL": "COALESCE",
-    "NVL2": "NVL2",  # Databricks supports NVL2
+    "NVL": "NVL",  # Databricks supports NVL natively
+    "NVL2": "NVL2",  # Databricks supports NVL2 natively
     "DECODE": "DECODE",  # Handled specially → CASE
     "SUBSTR": "SUBSTRING",
     "SUBSTRB": "SUBSTRING",  # Byte-based → character-based
