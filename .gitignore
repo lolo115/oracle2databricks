@@ -33,6 +33,8 @@ ENV/
 
 # Output directory (generated files)
 output/
+examples/output/
+report.json
 
 # OS files
 .DS_Store
