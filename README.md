@@ -123,25 +123,139 @@ print(result.converted_code)
 
 ### SQL Functions
 
-| Oracle | Databricks |
-|--------|------------|
-| `SYSDATE` | `CURRENT_TIMESTAMP()` |
-| `NVL(a, b)` | `NVL(a, b)` (native support) |
-| `NVL2(a, b, c)` | `NVL2(a, b, c)` (native support) |
-| `DECODE(...)` | `CASE WHEN ... END` |
-| `TO_NUMBER(x)` | `CAST(x AS DECIMAL)` |
-| `SUBSTR(s, p, l)` | `SUBSTRING(s, p, l)` |
-| `LISTAGG(...)` | `ARRAY_JOIN(COLLECT_LIST(...))` |
-| `ROWNUM` | `ROW_NUMBER() OVER()` |
+#### String Functions
 
-### SQL Syntax
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `SUBSTR(s, p, l)` | `SUBSTRING(s, p, l)` | |
+| `INSTR(s, sub)` | `INSTR(s, sub)` | Native support |
+| `LENGTH(s)` | `LENGTH(s)` | Native support |
+| `UPPER/LOWER/INITCAP` | `UPPER/LOWER/INITCAP` | Native support |
+| `TRIM/LTRIM/RTRIM` | `TRIM/LTRIM/RTRIM` | Native support |
+| `LPAD/RPAD` | `LPAD/RPAD` | Native support |
+| `REPLACE` | `REPLACE` | Native support |
+| `TRANSLATE` | `TRANSLATE` | Native support |
+| `CONCAT` / `\|\|` | `CONCAT` | String concatenation |
+| `REVERSE` | `REVERSE` | Native support |
+| `SOUNDEX` | `SOUNDEX` | Native support |
+| `REGEXP_REPLACE` | `REGEXP_REPLACE` | Native support |
+| `REGEXP_SUBSTR` | `REGEXP_EXTRACT` | Different syntax |
+| `REGEXP_LIKE` | `RLIKE` | Different syntax |
+| `REGEXP_INSTR` | `REGEXP_INSTR` | Native support |
+| `REGEXP_COUNT` | Custom | Uses `REGEXP_EXTRACT_ALL` |
 
-| Oracle | Databricks |
-|--------|------------|
-| `a.col = b.col(+)` | `LEFT OUTER JOIN` |
-| `a.col(+) = b.col` | `RIGHT OUTER JOIN` |
-| `FROM DUAL` | (removed - not needed) |
-| `/*+ hints */` | (removed - not applicable) |
+#### Numeric Functions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `ABS/CEIL/FLOOR` | `ABS/CEIL/FLOOR` | Native support |
+| `ROUND/TRUNC` | `ROUND/TRUNC` | Native support |
+| `MOD` | `MOD` | Native support |
+| `POWER/SQRT` | `POWER/SQRT` | Native support |
+| `SIGN` | `SIGN` | Native support |
+| `EXP/LN/LOG` | `EXP/LN/LOG` | Native support |
+| `SIN/COS/TAN/ASIN/ACOS/ATAN` | Same | Trigonometric functions |
+| `SINH/COSH/TANH` | Same | Hyperbolic functions |
+| `BITAND` | `BITAND` | Native support |
+| `WIDTH_BUCKET` | `WIDTH_BUCKET` | Native support |
+
+#### Date/Time Functions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `SYSDATE` | `CURRENT_DATE()` / `CURRENT_TIMESTAMP()` | |
+| `SYSTIMESTAMP` | `CURRENT_TIMESTAMP()` | |
+| `ADD_MONTHS` | `ADD_MONTHS` | Native support |
+| `MONTHS_BETWEEN` | `MONTHS_BETWEEN` | Native support |
+| `LAST_DAY` | `LAST_DAY` | Native support |
+| `NEXT_DAY` | `NEXT_DAY` | Native support |
+| `EXTRACT` | `EXTRACT` | Native support |
+| `TO_DATE` | `TO_DATE` | Format conversion applied |
+| `TO_CHAR` | `TO_CHAR` / `DATE_FORMAT` | Format conversion applied |
+| `TO_TIMESTAMP` | `TO_TIMESTAMP` | Format conversion applied |
+| `TRUNC(date)` | `TRUNC` | For date truncation |
+
+#### Conversion & Conditional Functions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `NVL(a, b)` | `NVL(a, b)` | Native support |
+| `NVL2(a, b, c)` | `NVL2(a, b, c)` | Native support |
+| `DECODE(...)` | `CASE WHEN ... END` | Converted to CASE |
+| `COALESCE` | `COALESCE` | Native support |
+| `NULLIF` | `NULLIF` | Native support |
+| `GREATEST/LEAST` | `GREATEST/LEAST` | Native support |
+| `TO_NUMBER(x)` | `CAST(x AS DECIMAL)` | |
+| `CAST` | `CAST` | Native support |
+| `RAWTOHEX` | `HEX` | |
+| `HEXTORAW` | `UNHEX` | |
+
+#### Aggregate Functions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `COUNT/SUM/AVG/MIN/MAX` | Same | Native support |
+| `LISTAGG(...)` | `ARRAY_JOIN(COLLECT_LIST(...))` | String aggregation |
+| `WM_CONCAT` | `ARRAY_JOIN(COLLECT_LIST(...))` | Deprecated Oracle function |
+| `MEDIAN` | `PERCENTILE(col, 0.5)` | |
+| `STDDEV/VARIANCE` | `STDDEV/VARIANCE` | Native support |
+| `STDDEV_POP/STDDEV_SAMP` | Same | Native support |
+| `VAR_POP/VAR_SAMP` | Same | Native support |
+| `CORR/COVAR_POP/COVAR_SAMP` | Same | Native support |
+| `COLLECT` | `COLLECT_LIST` | |
+| `APPROX_COUNT_DISTINCT` | `APPROX_COUNT_DISTINCT` | Native support |
+
+#### Analytic/Window Functions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `ROW_NUMBER` | `ROW_NUMBER` | Native support |
+| `RANK/DENSE_RANK` | `RANK/DENSE_RANK` | Native support |
+| `NTILE` | `NTILE` | Native support |
+| `LEAD/LAG` | `LEAD/LAG` | Native support |
+| `FIRST_VALUE/LAST_VALUE` | `FIRST_VALUE/LAST_VALUE` | Native support |
+| `NTH_VALUE` | `NTH_VALUE` | Native support |
+| `CUME_DIST/PERCENT_RANK` | Same | Native support |
+| `PERCENTILE_CONT/DISC` | Same | Native support |
+| `RATIO_TO_REPORT` | `expr / SUM(expr) OVER()` | Converted |
+| `ROWNUM` | `ROW_NUMBER() OVER()` | Converted |
+
+#### JSON Functions (Oracle 12c+)
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `JSON_VALUE` | `GET_JSON_OBJECT` | Different syntax |
+| `JSON_QUERY` | `GET_JSON_OBJECT` | Returns JSON fragment |
+| `JSON_OBJECT` | `TO_JSON` | |
+| `JSON_ARRAY` | `TO_JSON` | |
+| `JSON_EXISTS` | `GET_JSON_OBJECT IS NOT NULL` | |
+| `JSON_ARRAYAGG` | `TO_JSON(COLLECT_LIST())` | |
+
+#### Other Functions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `SYS_GUID` | `UUID()` | |
+| `ORA_HASH` | `HASH()` | |
+| `STANDARD_HASH` | `SHA2` | Default SHA256 |
+| `USER` | `CURRENT_USER()` | |
+| `USERENV(param)` | Various | Mapped to Databricks equivalents |
+| `SYS_CONTEXT` | Various | Mapped to Databricks equivalents |
+
+### SQL Syntax Conversions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `a.col = b.col(+)` | `LEFT OUTER JOIN` | Oracle outer join syntax |
+| `a.col(+) = b.col` | `RIGHT OUTER JOIN` | Oracle outer join syntax |
+| `FROM DUAL` | (removed) | Not needed in Databricks |
+| `/*+ hints */` | (removed) | Oracle hints not applicable |
+| `CONNECT BY` | `WITH RECURSIVE` | Hierarchical queries |
+| `START WITH` | CTE anchor | Part of recursive CTE |
+| `LEVEL` | Computed column | Tracked in recursive CTE |
+| `SYS_CONNECT_BY_PATH` | Path concatenation | In recursive CTE |
+| `CONNECT_BY_ROOT` | Root value tracking | In recursive CTE |
+| `ROWNUM <= N` | `LIMIT N` | Row limiting |
 
 **Outer Join Example:**
 
@@ -159,25 +273,175 @@ LEFT OUTER JOIN departments d ON e.department_id = d.department_id
 
 ### Data Types
 
-| Oracle | Databricks |
-|--------|------------|
-| `VARCHAR2(n)` | `STRING` |
-| `NUMBER(p,s)` | `DECIMAL(p,s)` |
-| `DATE` | `TIMESTAMP` |
-| `CLOB` | `STRING` |
-| `BLOB` | `BINARY` |
-| `RAW` | `BINARY` |
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `VARCHAR2(n)` | `STRING` | |
+| `NVARCHAR2(n)` | `STRING` | |
+| `CHAR(n)` | `STRING` | |
+| `CLOB` / `NCLOB` | `STRING` | |
+| `LONG` | `STRING` | |
+| `NUMBER` | `DECIMAL(38,10)` | Default precision |
+| `NUMBER(p)` | `DECIMAL(p,0)` or `INT/BIGINT` | Based on precision |
+| `NUMBER(p,s)` | `DECIMAL(p,s)` | |
+| `BINARY_FLOAT` | `FLOAT` | |
+| `BINARY_DOUBLE` | `DOUBLE` | |
+| `INTEGER` / `INT` | `INT` | |
+| `DATE` | `TIMESTAMP` | Oracle DATE includes time |
+| `TIMESTAMP` | `TIMESTAMP` | |
+| `TIMESTAMP WITH TIME ZONE` | `TIMESTAMP` | TZ info may be lost |
+| `RAW` / `LONG RAW` | `BINARY` | |
+| `BLOB` | `BINARY` | |
+| `BOOLEAN` | `BOOLEAN` | |
+| `XMLTYPE` | `STRING` | |
+| `ROWID` / `UROWID` | `STRING` | |
 
 ### PL/SQL Constructs
 
-| Oracle | Databricks |
-|--------|------------|
-| `CREATE PROCEDURE` | `CREATE PROCEDURE ... LANGUAGE SQL` |
-| `CREATE FUNCTION` | `CREATE FUNCTION ... LANGUAGE SQL` |
-| `DBMS_OUTPUT.PUT_LINE` | `SELECT` (for debugging) |
-| `RAISE_APPLICATION_ERROR` | `RAISE USING MESSAGE` |
-| `:=` assignment | `SET var = value` |
-| `EXCEPTION WHEN` | `EXCEPTION WHEN` |
+#### Stored Procedures
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `CREATE PROCEDURE` | `CREATE PROCEDURE ... LANGUAGE SQL` | |
+| `CREATE OR REPLACE PROCEDURE` | `CREATE OR REPLACE PROCEDURE` | |
+| `IN` parameters | Parameters | Direct mapping |
+| `OUT` parameters | ⚠️ Manual review | Use STRUCT returns or temp tables |
+| `IN OUT` parameters | ⚠️ Manual review | Use STRUCT returns or temp tables |
+| `DEFAULT` values | `DEFAULT` | Native support |
+
+**Procedure Example:**
+
+```sql
+-- Oracle
+CREATE OR REPLACE PROCEDURE update_salary(
+    p_emp_id IN NUMBER,
+    p_amount IN NUMBER
+) IS
+BEGIN
+    UPDATE employees SET salary = p_amount WHERE employee_id = p_emp_id;
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Updated employee ' || p_emp_id);
+END;
+
+-- Databricks
+CREATE OR REPLACE PROCEDURE update_salary(p_emp_id DECIMAL, p_amount DECIMAL)
+LANGUAGE SQL
+AS $$
+BEGIN
+  UPDATE employees SET salary = p_amount WHERE employee_id = p_emp_id;
+  -- Note: Databricks uses auto-commit
+  SELECT 'Updated employee ' || p_emp_id;
+END;
+$$;
+```
+
+#### Stored Functions
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `CREATE FUNCTION` | `CREATE FUNCTION ... LANGUAGE SQL` | |
+| `RETURN` | `RETURN` | Native support |
+| `DETERMINISTIC` | `DETERMINISTIC` | Native support |
+| `PIPELINED` | ⚠️ Manual review | No direct equivalent |
+
+**Function Example:**
+
+```sql
+-- Oracle
+CREATE OR REPLACE FUNCTION get_full_name(p_emp_id NUMBER)
+RETURN VARCHAR2
+IS
+    v_name VARCHAR2(100);
+BEGIN
+    SELECT first_name || ' ' || last_name INTO v_name
+    FROM employees WHERE employee_id = p_emp_id;
+    RETURN v_name;
+END;
+
+-- Databricks
+CREATE OR REPLACE FUNCTION get_full_name(p_emp_id DECIMAL)
+RETURNS STRING
+LANGUAGE SQL
+AS $$
+  SELECT first_name || ' ' || last_name
+  FROM employees WHERE employee_id = p_emp_id
+$$;
+```
+
+#### Control Structures
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `IF...THEN...ELSIF...ELSE...END IF` | `IF...THEN...ELSEIF...ELSE...END IF` | `ELSIF` → `ELSEIF` |
+| `CASE...WHEN...END CASE` | `CASE...WHEN...END CASE` | Native support |
+| `LOOP...END LOOP` | `LOOP...END LOOP` | Native support |
+| `WHILE...LOOP` | `WHILE...DO...END WHILE` | Different syntax |
+| `FOR...IN...LOOP` | `FOR...IN...DO...END FOR` | Different syntax |
+| `EXIT` / `EXIT WHEN` | `LEAVE` / `IF...LEAVE` | |
+| `CONTINUE` | `ITERATE` | |
+| `GOTO` | ⚠️ Not supported | Restructure logic |
+
+#### Variable Handling
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `DECLARE` | `DECLARE` | Native support |
+| `:=` assignment | `SET var = value` or `=` | |
+| `%TYPE` | ⚠️ Manual review | Specify explicit type |
+| `%ROWTYPE` | ⚠️ Manual review | Use STRUCT or explicit columns |
+| `CONSTANT` | Not supported | Use regular variable |
+| `NOT NULL` | Not enforced | Validation in code |
+
+#### Exception Handling
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `EXCEPTION` | `EXCEPTION` | Native support |
+| `WHEN NO_DATA_FOUND` | `WHEN NO_DATA_FOUND` | Native support |
+| `WHEN TOO_MANY_ROWS` | ⚠️ Manual review | Handle with LIMIT |
+| `WHEN OTHERS` | `WHEN OTHER` | Different keyword |
+| `RAISE_APPLICATION_ERROR` | `RAISE USING MESSAGE` | Different syntax |
+| `SQLERRM` | Error message | In exception handler |
+| `SQLCODE` | Error code | In exception handler |
+
+#### Cursor Operations
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `CURSOR...IS SELECT` | `DECLARE cursor CURSOR FOR` | Different syntax |
+| `OPEN cursor` | `OPEN cursor` | Native support |
+| `FETCH cursor INTO` | `FETCH cursor INTO` | Native support |
+| `CLOSE cursor` | `CLOSE cursor` | Native support |
+| `cursor%FOUND` | ⚠️ Manual review | Check fetch result |
+| `cursor%NOTFOUND` | ⚠️ Manual review | Check fetch result |
+| `cursor%ROWCOUNT` | ⚠️ Manual review | Use counter variable |
+| `FOR rec IN cursor LOOP` | `FOR rec IN cursor DO` | Different syntax |
+
+#### Other PL/SQL Features
+
+| Oracle | Databricks | Notes |
+|--------|------------|-------|
+| `DBMS_OUTPUT.PUT_LINE` | `SELECT` statement | For debugging |
+| `COMMIT` / `ROLLBACK` | (removed) | Auto-commit in Databricks |
+| `AUTONOMOUS_TRANSACTION` | ⚠️ Not supported | Restructure logic |
+| `BULK COLLECT` | ⚠️ Manual review | Use set-based operations |
+| `FORALL` | ⚠️ Manual review | Use set-based operations |
+| Anonymous blocks | ⚠️ Manual review | Convert to procedures |
+
+#### Packages
+
+Oracle packages are converted to individual procedures and functions:
+
+```sql
+-- Oracle Package
+CREATE OR REPLACE PACKAGE emp_pkg AS
+    PROCEDURE hire_employee(p_name VARCHAR2);
+    FUNCTION get_salary(p_emp_id NUMBER) RETURN NUMBER;
+END emp_pkg;
+
+-- Databricks (separate objects)
+CREATE OR REPLACE PROCEDURE emp_pkg_hire_employee(p_name STRING) ...
+CREATE OR REPLACE FUNCTION emp_pkg_get_salary(p_emp_id DECIMAL) ...
+```
 
 ## Limitations & Manual Review Items
 
@@ -230,9 +494,9 @@ oracle2databricks/
 └── README.md
 ```
 
-## Examples
+## Conversion Examples
 
-### Translating a Complex Query
+### Complex Query with Multiple Conversions
 
 **Oracle:**
 ```sql
@@ -249,7 +513,7 @@ WHERE e.department_id = d.department_id(+)
 ```sql
 SELECT
   e.employee_id,
-  COALESCE(e.commission_pct, 0) AS commission,
+  NVL(e.commission_pct, 0) AS commission,
   CASE
     WHEN e.department_id = 10 THEN 'Admin'
     WHEN e.department_id = 20 THEN 'IT'
@@ -262,11 +526,12 @@ LEFT OUTER JOIN departments AS d
 LIMIT 100
 ```
 
-### Converting a Hierarchical Query (CONNECT BY)
+### Hierarchical Query (CONNECT BY → Recursive CTE)
 
 **Oracle:**
 ```sql
-SELECT employee_id, first_name, manager_id, LEVEL
+SELECT employee_id, first_name, manager_id, LEVEL,
+       SYS_CONNECT_BY_PATH(first_name, '/') as path
 FROM employees
 START WITH manager_id IS NULL
 CONNECT BY PRIOR employee_id = manager_id;
@@ -276,45 +541,121 @@ CONNECT BY PRIOR employee_id = manager_id;
 ```sql
 WITH RECURSIVE hierarchy_cte AS (
     -- Anchor member: root nodes (START WITH condition)
-    SELECT employee_id, first_name, manager_id, 1 AS level
+    SELECT employee_id, first_name, manager_id, 1 AS level,
+           CONCAT('/', first_name) AS path
     FROM employees AS e
     WHERE manager_id IS NULL
     
     UNION ALL
     
     -- Recursive member: child nodes (CONNECT BY condition)
-    SELECT e.employee_id, e.first_name, e.manager_id, hierarchy_cte.level + 1 AS level
+    SELECT e.employee_id, e.first_name, e.manager_id, 
+           hierarchy_cte.level + 1 AS level,
+           CONCAT(hierarchy_cte.path, '/', e.first_name) AS path
     FROM employees AS e
     INNER JOIN hierarchy_cte ON e.manager_id = hierarchy_cte.employee_id
 )
-SELECT employee_id, first_name, manager_id, level
+SELECT employee_id, first_name, manager_id, level, path
 FROM hierarchy_cte;
 ```
 
-### Converting a Stored Procedure
+### Analytic Functions with LISTAGG
 
 **Oracle:**
 ```sql
-CREATE OR REPLACE PROCEDURE update_salary(
+SELECT department_id,
+       LISTAGG(first_name, ', ') WITHIN GROUP (ORDER BY hire_date) as employees,
+       MEDIAN(salary) as median_sal,
+       RATIO_TO_REPORT(SUM(salary)) OVER () as sal_ratio
+FROM employees
+GROUP BY department_id;
+```
+
+**Databricks:**
+```sql
+SELECT department_id,
+       ARRAY_JOIN(COLLECT_LIST(first_name), ', ') AS employees,
+       PERCENTILE(salary, 0.5) AS median_sal,
+       SUM(salary) / SUM(SUM(salary)) OVER () AS sal_ratio
+FROM employees
+GROUP BY department_id;
+```
+
+### Date Format Conversions
+
+**Oracle:**
+```sql
+SELECT TO_CHAR(hire_date, 'DD-MON-YYYY HH24:MI:SS') as formatted_date,
+       TO_DATE('2024-01-15', 'YYYY-MM-DD') as parsed_date,
+       ADD_MONTHS(SYSDATE, 3) as future_date,
+       MONTHS_BETWEEN(SYSDATE, hire_date) as months_employed
+FROM employees;
+```
+
+**Databricks:**
+```sql
+SELECT TO_CHAR(hire_date, 'dd-MMM-yyyy HH:mm:ss') AS formatted_date,
+       TO_DATE('2024-01-15', 'yyyy-MM-dd') AS parsed_date,
+       ADD_MONTHS(CURRENT_DATE(), 3) AS future_date,
+       MONTHS_BETWEEN(CURRENT_DATE(), hire_date) AS months_employed
+FROM employees;
+```
+
+### PL/SQL with Exception Handling
+
+**Oracle:**
+```sql
+CREATE OR REPLACE PROCEDURE transfer_employee(
     p_emp_id IN NUMBER,
-    p_amount IN NUMBER
+    p_new_dept_id IN NUMBER
 ) IS
+    v_old_dept NUMBER;
+    e_invalid_dept EXCEPTION;
 BEGIN
-    UPDATE employees SET salary = p_amount WHERE employee_id = p_emp_id;
+    -- Validate department
+    SELECT COUNT(*) INTO v_old_dept FROM departments WHERE department_id = p_new_dept_id;
+    IF v_old_dept = 0 THEN
+        RAISE e_invalid_dept;
+    END IF;
+    
+    -- Perform transfer
+    UPDATE employees SET department_id = p_new_dept_id WHERE employee_id = p_emp_id;
     COMMIT;
-    DBMS_OUTPUT.PUT_LINE('Updated employee ' || p_emp_id);
+    DBMS_OUTPUT.PUT_LINE('Transfer successful');
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Employee not found');
+        ROLLBACK;
+    WHEN e_invalid_dept THEN
+        DBMS_OUTPUT.PUT_LINE('Invalid department');
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error: ' || SQLERRM);
+        ROLLBACK;
 END;
 ```
 
 **Databricks:**
 ```sql
-CREATE OR REPLACE PROCEDURE update_salary(p_emp_id DECIMAL, p_amount DECIMAL)
+CREATE OR REPLACE PROCEDURE transfer_employee(p_emp_id DECIMAL, p_new_dept_id DECIMAL)
 LANGUAGE SQL
 AS $$
+DECLARE
+  v_old_dept DECIMAL;
 BEGIN
-  UPDATE employees SET salary = p_amount WHERE employee_id = p_emp_id;
-  -- Note: Databricks uses auto-commit
-  SELECT 'Updated employee ' || p_emp_id;  -- Converted from DBMS_OUTPUT.PUT_LINE
+  -- Validate department
+  SELECT COUNT(*) INTO v_old_dept FROM departments WHERE department_id = p_new_dept_id;
+  IF v_old_dept = 0 THEN
+    RAISE USING MESSAGE = 'Invalid department';
+  END IF;
+  
+  -- Perform transfer
+  UPDATE employees SET department_id = p_new_dept_id WHERE employee_id = p_emp_id;
+  SELECT 'Transfer successful';
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    SELECT 'Employee not found';
+  WHEN OTHER THEN
+    SELECT 'Error occurred';
 END;
 $$;
 ```
