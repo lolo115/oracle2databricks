@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Custom transformation rules for Oracle to Databricks SQL conversion. Edit this file to add your in-house Oracle functions and convert them to Databricks equivalents.",
+  "settings": {
+    "apply_before_default": true,
+    "continue_on_error": true
+  },
+  "custom_rules": [
+    {
+      "name": "Convert MY_COMPANY_CONCAT",
+      "description": "Converts in-house MY_COMPANY_CONCAT(a, b, c) to CONCAT(a, b, c)",
+      "pattern": "MY_COMPANY_CONCAT\\s*\\(\\s*([^,]+)\\s*,\\s*([^,]+)\\s*,\\s*([^)]+)\\s*\\)",
+      "replacement": "CONCAT(\\1, \\2, \\3)",
+      "flags": ["IGNORECASE"],
+      "enabled": true,
+      "priority": 100
+    },
+    {
+      "name": "Convert CUSTOM_DATE_FORMAT",
+      "description": "Converts CUSTOM_DATE_FORMAT(date_col) to DATE_FORMAT(date_col, 'yyyy-MM-dd')",
+      "pattern": "CUSTOM_DATE_FORMAT\\s*\\(\\s*([^)]+)\\s*\\)",
+      "replacement": "DATE_FORMAT(\\1, 'yyyy-MM-dd')",
+      "flags": ["IGNORECASE"],
+      "enabled": true,
+      "priority": 100
+    },
+    {
+      "name": "Convert GET_EMPLOYEE_NAME",
+      "description": "Example: Replace in-house function with a Databricks UDF call",
+      "pattern": "GET_EMPLOYEE_NAME\\s*\\(\\s*([^)]+)\\s*\\)",
+      "replacement": "my_catalog.hr_schema.get_employee_name(\\1)",
+      "flags": ["IGNORECASE"],
+      "enabled": false,
+      "priority": 90
+    },
+    {
+      "name": "Replace schema prefix",
+      "description": "Replace old Oracle schema with Databricks catalog.schema",
+      "pattern": "\\bOLD_SCHEMA\\.",
+      "replacement": "my_catalog.new_schema.",
+      "flags": ["IGNORECASE"],
+      "enabled": false,
+      "priority": 50
+    },
+    {
+      "name": "Convert CUSTOM_NVL3",
+      "description": "Converts in-house CUSTOM_NVL3(a, b, c) - returns b if a is not null, else c",
+      "pattern": "CUSTOM_NVL3\\s*\\(\\s*([^,]+)\\s*,\\s*([^,]+)\\s*,\\s*([^)]+)\\s*\\)",
+      "replacement": "IF(\\1 IS NOT NULL, \\2, \\3)",
+      "flags": ["IGNORECASE"],
+      "enabled": true,
+      "priority": 100
+    },
+    {
+      "name": "Convert PKG_UTILS.FORMAT_AMOUNT",
+      "description": "Converts package function to Databricks FORMAT_NUMBER",
+      "pattern": "PKG_UTILS\\.FORMAT_AMOUNT\\s*\\(\\s*([^,]+)\\s*,\\s*([^)]+)\\s*\\)",
+      "replacement": "FORMAT_NUMBER(CAST(\\1 AS DECIMAL(18, \\2)), \\2)",
+      "flags": ["IGNORECASE"],
+      "enabled": true,
+      "priority": 100
+    },
+    {
+      "name": "Convert LOG_ERROR procedure call",
+      "description": "Converts Oracle error logging procedure to Databricks logging comment",
+      "pattern": "PKG_LOGGING\\.LOG_ERROR\\s*\\(\\s*'([^']+)'\\s*,\\s*([^)]+)\\s*\\)",
+      "replacement": "-- [LOGGING] Error in \\1: Use Databricks logging framework\n-- Original: PKG_LOGGING.LOG_ERROR('\\1', \\2)",
+      "flags": ["IGNORECASE"],
+      "enabled": true,
+      "priority": 80
+    },
+    {
+      "name": "Convert INHOUSE_ENCRYPT function",
+      "description": "Converts custom encryption function to Databricks AES_ENCRYPT",
+      "pattern": "INHOUSE_ENCRYPT\\s*\\(\\s*([^,]+)\\s*,\\s*([^)]+)\\s*\\)",
+      "replacement": "BASE64(AES_ENCRYPT(\\1, \\2))",
+      "flags": ["IGNORECASE"],
+      "enabled": false,
+      "priority": 100
+    },
+    {
+      "name": "Convert table aliases with suffix",
+      "description": "Example: Remove _TBL suffix from table names",
+      "pattern": "\\bFROM\\s+(\\w+)_TBL\\b",
+      "replacement": "FROM \\1",
+      "flags": ["IGNORECASE"],
+      "enabled": false,
+      "priority": 30
+    }
+  ]
+}

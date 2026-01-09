@@ -6,7 +6,7 @@ Oracle-specific SQL constructs that require special processing.
 """
 
 import re
-from typing import Dict, List, Tuple, Optional, Set
+from typing import Dict, List, Tuple, Optional, Set, TYPE_CHECKING
 from dataclasses import dataclass
 
 import sqlglot
@@ -21,6 +21,9 @@ from .function_mappings import (
     get_sys_context_equivalent,
     DIRECT_FUNCTION_MAPPINGS,
 )
+
+if TYPE_CHECKING:
+    from .custom_rules import CustomRulesConfig
 
 
 @dataclass
@@ -1327,18 +1330,37 @@ def apply_all_transformations(expression: exp.Expression) -> exp.Expression:
     return expression
 
 
-def apply_string_transformations(sql: str) -> str:
+def apply_string_transformations(
+    sql: str,
+    custom_rules_config: Optional["CustomRulesConfig"] = None
+) -> Tuple[str, List[str]]:
     """
     Apply string-level transformations that can't be done at AST level.
     
     Args:
         sql: SQL string to transform
+        custom_rules_config: Optional custom rules configuration for user-defined transformations
         
     Returns:
-        Transformed SQL string
+        Tuple of (transformed SQL string, list of applied custom rule names)
     """
+    applied_custom_rules = []
+    
+    # Apply custom rules BEFORE default transformations if configured
+    if custom_rules_config and custom_rules_config.apply_before_default:
+        from .custom_rules import apply_custom_rules
+        sql, applied_custom_rules = apply_custom_rules(sql, custom_rules_config)
+    
+    # Apply default transformations
     sql = OracleTransformations.remove_oracle_hints(sql)
     sql = OracleTransformations.transform_sequences(sql)
     sql = OracleTransformations.transform_outer_join_syntax(sql)
-    return sql
+    
+    # Apply custom rules AFTER default transformations if configured
+    if custom_rules_config and not custom_rules_config.apply_before_default:
+        from .custom_rules import apply_custom_rules
+        sql, after_rules = apply_custom_rules(sql, custom_rules_config)
+        applied_custom_rules.extend(after_rules)
+    
+    return sql, applied_custom_rules
 

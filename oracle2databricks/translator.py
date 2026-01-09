@@ -18,6 +18,7 @@ from sqlglot.errors import ParseError
 from .transformations import apply_all_transformations, apply_string_transformations
 from .function_mappings import get_databricks_data_type
 from .connect_by_converter import ConnectByConverter, has_connect_by
+from .custom_rules import CustomRulesConfig, load_custom_rules
 
 
 def strip_sql_comments(sql: str) -> str:
@@ -188,15 +189,27 @@ class OracleToDatabricksTranslator:
         >>> result = translator.translate("SELECT SYSDATE FROM DUAL")
         >>> print(result.translated_sql)
         SELECT CURRENT_TIMESTAMP()
+        
+        # With custom rules
+        >>> translator = OracleToDatabricksTranslator(config_file="custom_rules.json")
+        >>> result = translator.translate("SELECT MY_CUSTOM_FUNC(a, b) FROM test")
     """
     
-    def __init__(self, pretty: bool = True, identify: bool = False):
+    def __init__(
+        self,
+        pretty: bool = True,
+        identify: bool = False,
+        config_file: Optional[str] = None,
+        custom_rules_config: Optional[CustomRulesConfig] = None
+    ):
         """
         Initialize the translator.
         
         Args:
             pretty: Whether to format output SQL with indentation
             identify: Whether to quote identifiers
+            config_file: Optional path to a JSON file containing custom transformation rules
+            custom_rules_config: Optional pre-loaded CustomRulesConfig object
         """
         self.pretty = pretty
         self.identify = identify
@@ -205,6 +218,17 @@ class OracleToDatabricksTranslator:
             r'^\s*SELECT\s+(.+?)\s+FROM\s+DUAL\s*;?\s*$',
             re.IGNORECASE | re.DOTALL
         )
+        
+        # Load custom rules configuration
+        self.custom_rules_config: Optional[CustomRulesConfig] = None
+        if custom_rules_config is not None:
+            self.custom_rules_config = custom_rules_config
+        elif config_file is not None:
+            self.custom_rules_config = load_custom_rules(config_file)
+            if self.custom_rules_config:
+                enabled_count = len(self.custom_rules_config.get_enabled_rules())
+                total_count = len(self.custom_rules_config.rules)
+                print(f"Loaded {enabled_count}/{total_count} custom transformation rules from: {config_file}")
     
     def translate(self, sql: str) -> TranslationResult:
         """
@@ -246,8 +270,19 @@ class OracleToDatabricksTranslator:
             if connect_by_result is not None:
                 return connect_by_result
         
-        # Pre-process: Apply string-level transformations
-        processed_sql = apply_string_transformations(sql_without_comments.strip())
+        # Pre-process: Apply string-level transformations (including custom rules)
+        processed_sql, applied_custom_rules = apply_string_transformations(
+            sql_without_comments.strip(),
+            self.custom_rules_config
+        )
+        
+        # Track applied custom rules in warnings for transparency
+        if applied_custom_rules:
+            for rule_name in applied_custom_rules:
+                if "ERROR" not in rule_name:
+                    warnings.append(f"Applied custom rule: {rule_name}")
+                else:
+                    warnings.append(f"Custom rule error: {rule_name}")
         
         # Check for warnings added during pre-processing
         if processed_sql.startswith("-- WARNING:"):
@@ -594,8 +629,11 @@ class OracleToDatabricksTranslator:
                 suggestion="Converted to recursive CTE"
             ))
         
-        # Apply additional post-processing to the converted SQL
-        translated = apply_string_transformations(result.converted_sql)
+        # Apply additional post-processing to the converted SQL (including custom rules)
+        translated, _ = apply_string_transformations(
+            result.converted_sql,
+            self.custom_rules_config
+        )
         translated = self._post_process(translated)
         
         return TranslationResult(

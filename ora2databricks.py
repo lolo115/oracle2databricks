@@ -3,10 +3,12 @@
 Oracle to Databricks SQL Translator - Command Line Interface
 
 Usage:
-    python cli.py translate <input_file> [--output <output_file>] [--format] [--report]
-    python cli.py convert-plsql <input_file> [--output <output_file>] [--report]
-    python cli.py batch <input_dir> <output_dir> [--recursive] [--report]
-    python cli.py interactive
+    python ora2databricks.py convert <input_file> [--output <output_file>] [--config <rules_file>] [--report]
+    python ora2databricks.py batch <input_dir> <output_dir> [--config <rules_file>] [--recursive] [--report]
+    python ora2databricks.py interactive
+    python ora2databricks.py inline "SQL statement" [--config <rules_file>]
+    python ora2databricks.py init-config [--output <config_file>]
+    python ora2databricks.py validate-config <config_file>
 """
 
 import argparse
@@ -30,6 +32,9 @@ from oracle2databricks import (
     build_unified_conversion_report,
     print_conversion_report,
     analyze_translation_result,
+    load_custom_rules,
+    save_sample_config,
+    validate_config,
 )
 from oracle2databricks.function_detector import FunctionDetector
 
@@ -219,7 +224,11 @@ def convert_file_unified(args):
     
     This replaces the separate translate and convert-plsql commands.
     """
-    translator = OracleToDatabricksTranslator(pretty=getattr(args, 'format', True))
+    config_file = getattr(args, 'config', None)
+    translator = OracleToDatabricksTranslator(
+        pretty=getattr(args, 'format', True),
+        config_file=config_file
+    )
     converter = PLSQLConverter()
     
     input_path = Path(args.input_file)
@@ -442,9 +451,78 @@ def interactive_mode(args):
                 print(f"-- Translation failed: {'; '.join(result.errors)}")
 
 
+def init_config(args):
+    """Generate a sample custom rules configuration file."""
+    output_path = args.output
+    
+    try:
+        # Ensure the directory exists
+        output_dir = Path(output_path).parent
+        if output_dir and not output_dir.exists():
+            output_dir.mkdir(parents=True, exist_ok=True)
+        
+        save_sample_config(output_path)
+        print(f"\n✓ Configuration file created: {output_path}")
+        print("\nThis file contains example custom transformation rules.")
+        print("Edit the file to add your own in-house function conversions.")
+        print("\nNote: User configuration files in extra_config/ are git-ignored.")
+        print("      The sample template (custom_rules.sample.json) is tracked in git.")
+        print("\nUsage:")
+        print(f"  python cli.py convert input.sql -o output.sql --config {output_path}")
+        return 0
+    except Exception as e:
+        print(f"Error creating configuration file: {e}")
+        return 1
+
+
+def validate_config_cmd(args):
+    """Validate a custom rules configuration file."""
+    config_path = args.config_file
+    
+    print(f"Validating configuration file: {config_path}")
+    
+    is_valid, errors = validate_config(config_path)
+    
+    if is_valid:
+        # Load and display the rules
+        try:
+            config = load_custom_rules(config_path)
+            enabled_rules = config.get_enabled_rules()
+            disabled_rules = [r for r in config.rules if not r.enabled]
+            
+            print(f"\n✓ Configuration is valid!")
+            print(f"\nRules summary:")
+            print(f"  Total rules:    {len(config.rules)}")
+            print(f"  Enabled rules:  {len(enabled_rules)}")
+            print(f"  Disabled rules: {len(disabled_rules)}")
+            
+            if enabled_rules:
+                print(f"\nEnabled rules (by priority):")
+                for rule in enabled_rules:
+                    print(f"  [{rule.priority:3d}] {rule.name}")
+                    if rule.description:
+                        print(f"        {rule.description}")
+            
+            print(f"\nSettings:")
+            print(f"  Apply before default: {config.apply_before_default}")
+            print(f"  Continue on error:    {config.continue_on_error}")
+            
+            return 0
+        except Exception as e:
+            print(f"\n✗ Error loading configuration: {e}")
+            return 1
+    else:
+        print(f"\n✗ Configuration is invalid!")
+        print("\nErrors:")
+        for error in errors:
+            print(f"  • {error}")
+        return 1
+
+
 def translate_inline(args):
     """Translate inline SQL from command line argument."""
-    translator = OracleToDatabricksTranslator(pretty=args.format)
+    config_file = getattr(args, 'config', None)
+    translator = OracleToDatabricksTranslator(pretty=args.format, config_file=config_file)
     verbose = getattr(args, 'verbose', False)
     
     result = translator.translate(args.sql)
@@ -657,7 +735,8 @@ def batch_translate(args):
     print("-" * 60)
     
     # Initialize translator and converter
-    translator = OracleToDatabricksTranslator(pretty=True)
+    config_file = getattr(args, 'config', None)
+    translator = OracleToDatabricksTranslator(pretty=True, config_file=config_file)
     converter = PLSQLConverter()
     
     # Process files
@@ -914,28 +993,41 @@ def main():
         epilog="""
 Examples:
   # Convert any Oracle file (auto-detects SQL vs PL/SQL)
-  python cli.py convert input.sql --output output.sql
+  python ora2databricks.py convert input.sql --output output.sql
+
+  # Convert with custom transformation rules
+  python ora2databricks.py convert input.sql -o output.sql --config extra_config/custom_rules.json
 
   # Convert with verbose output
-  python cli.py convert input.sql -o output.sql --verbose
+  python ora2databricks.py convert input.sql -o output.sql --verbose
 
   # Convert with detailed conversion report
-  python cli.py convert input.sql -o output.sql --report
+  python ora2databricks.py convert input.sql -o output.sql --report
 
   # Convert with JSON report saved to file
-  python cli.py convert input.sql -o out.sql --report --report-format json --report-output report.json
+  python ora2databricks.py convert input.sql -o out.sql --report --report-format json --report-output report.json
 
-  # Batch convert a directory (auto-detects each file type)
-  python cli.py batch ./oracle_scripts ./databricks_scripts --recursive
+  # Batch convert a directory with custom rules
+  python ora2databricks.py batch ./oracle_scripts ./databricks_scripts --recursive --config extra_config/custom_rules.json
 
   # Batch convert with report
-  python cli.py batch ./oracle_scripts ./databricks_scripts -r --report
+  python ora2databricks.py batch ./oracle_scripts ./databricks_scripts -r --report
 
   # Interactive mode
-  python cli.py interactive
+  python ora2databricks.py interactive
 
   # Quick inline translation
-  python cli.py inline "SELECT SYSDATE FROM DUAL"
+  python ora2databricks.py inline "SELECT SYSDATE FROM DUAL"
+
+  # Quick inline translation with custom rules
+  python ora2databricks.py inline "SELECT MY_CUSTOM_FUNC(a, b) FROM test" --config extra_config/custom_rules.json
+
+  # Generate a custom rules configuration file (in extra_config/ folder)
+  python ora2databricks.py init-config
+  python ora2databricks.py init-config --output extra_config/my_project_rules.json
+
+  # Validate a custom rules configuration file
+  python ora2databricks.py validate-config extra_config/custom_rules.json
 """
     )
     
@@ -950,6 +1042,10 @@ Examples:
     convert_parser.add_argument(
         '--output', '-o',
         help='Output file path (prints to stdout if not specified)'
+    )
+    convert_parser.add_argument(
+        '--config', '-c',
+        help='Path to JSON file containing custom transformation rules'
     )
     convert_parser.add_argument(
         '--format', '-f',
@@ -989,6 +1085,10 @@ Examples:
     batch_parser.add_argument('input_dir', help='Input directory containing Oracle SQL files')
     batch_parser.add_argument('output_dir', help='Output directory for Databricks SQL files')
     batch_parser.add_argument(
+        '--config', '-c',
+        help='Path to JSON file containing custom transformation rules'
+    )
+    batch_parser.add_argument(
         '--recursive', '-r',
         action='store_true',
         default=False,
@@ -1026,6 +1126,10 @@ Examples:
     )
     inline_parser.add_argument('sql', help='Oracle SQL statement to translate')
     inline_parser.add_argument(
+        '--config', '-c',
+        help='Path to JSON file containing custom transformation rules'
+    )
+    inline_parser.add_argument(
         '--format', '-f',
         action='store_true',
         default=True,
@@ -1038,6 +1142,29 @@ Examples:
         help='Show detailed conversion notes and suggestions'
     )
     inline_parser.set_defaults(func=translate_inline)
+    
+    # Generate sample config file
+    init_config_parser = subparsers.add_parser(
+        'init-config',
+        help='Generate a sample custom_rules.json configuration file'
+    )
+    init_config_parser.add_argument(
+        '--output', '-o',
+        default='extra_config/custom_rules.json',
+        help='Output path for the configuration file (default: extra_config/custom_rules.json)'
+    )
+    init_config_parser.set_defaults(func=init_config)
+    
+    # Validate config file
+    validate_config_parser = subparsers.add_parser(
+        'validate-config',
+        help='Validate a custom rules configuration file'
+    )
+    validate_config_parser.add_argument(
+        'config_file',
+        help='Path to the configuration file to validate'
+    )
+    validate_config_parser.set_defaults(func=validate_config_cmd)
     
     args = parser.parse_args()
     

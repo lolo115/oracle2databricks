@@ -17,6 +17,13 @@ from .report_generator import (
     print_conversion_report,
     analyze_translation_result,
 )
+from .custom_rules import (
+    CustomRule,
+    CustomRulesConfig,
+    load_custom_rules,
+    save_sample_config,
+    validate_config,
+)
 
 __version__ = "0.1.0"
 __all__ = [
@@ -33,5 +40,11 @@ __all__ = [
     "build_unified_conversion_report",
     "print_conversion_report",
     "analyze_translation_result",
+    # Custom rules
+    "CustomRule",
+    "CustomRulesConfig",
+    "load_custom_rules",
+    "save_sample_config",
+    "validate_config",
 ]
 

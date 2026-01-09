@@ -36,6 +36,11 @@ output/
 examples/output/
 report.json
 
+# Custom rules configuration (user-specific)
+# Keep the default template, ignore user configurations
+extra_config/*.json
+!extra_config/custom_rules.sample.json
+
 # OS files
 .DS_Store
 Thumbs.db

@@ -8,6 +8,7 @@ A comprehensive Python tool for translating Oracle SQL and PL/SQL code to Databr
 - **PL/SQL Conversion**: Convert stored procedures, functions, and packages
 - **Function Mapping**: Automatic mapping of Oracle functions to Databricks equivalents
 - **Data Type Conversion**: Oracle data types to Databricks data types
+- **Custom Rules**: Define your own regex-based transformations for in-house functions ([see documentation](extra_config/README.md))
 - **CLI Interface**: Easy-to-use command line interface
 - **Interactive Mode**: Quick translations without file operations
 
@@ -27,28 +28,40 @@ pip install -r requirements.txt
 
 ```bash
 # Convert any Oracle file (auto-detects SQL vs PL/SQL)
-python cli.py convert input.sql --output output.sql
+python ora2databricks.py convert input.sql --output output.sql
+
+# Convert with custom transformation rules (for in-house functions)
+python ora2databricks.py convert input.sql -o output.sql --config extra_config/my_rules.json
 
 # Convert with verbose output
-python cli.py convert input.sql -o output.sql --verbose
+python ora2databricks.py convert input.sql -o output.sql --verbose
 
 # Convert with detailed conversion report
-python cli.py convert input.sql -o output.sql --report
+python ora2databricks.py convert input.sql -o output.sql --report
 
 # Convert with JSON report saved to file
-python cli.py convert input.sql -o out.sql --report --report-format json --report-output report.json
+python ora2databricks.py convert input.sql -o out.sql --report --report-format json --report-output report.json
 
 # Batch convert a directory (auto-detects each file type)
-python cli.py batch ./oracle_scripts ./databricks_scripts --recursive
+python ora2databricks.py batch ./oracle_scripts ./databricks_scripts --recursive
+
+# Batch convert with custom rules
+python ora2databricks.py batch ./oracle_scripts ./databricks_scripts -r --config extra_config/my_rules.json
 
 # Batch convert with report
-python cli.py batch ./oracle_scripts ./databricks_scripts -r --report
+python ora2databricks.py batch ./oracle_scripts ./databricks_scripts -r --report
 
 # Interactive mode
-python cli.py interactive
+python ora2databricks.py interactive
 
 # Quick inline translation
-python cli.py inline "SELECT SYSDATE FROM DUAL"
+python ora2databricks.py inline "SELECT SYSDATE FROM DUAL"
+
+# Generate a custom rules configuration file
+python ora2databricks.py init-config --output extra_config/my_rules.json
+
+# Validate a custom rules configuration
+python ora2databricks.py validate-config extra_config/my_rules.json
 ```
 
 ### Single File Conversion
@@ -56,11 +69,12 @@ python cli.py inline "SELECT SYSDATE FROM DUAL"
 The `convert` command auto-detects whether the file contains SQL, PL/SQL, or mixed content:
 
 ```bash
-python cli.py convert <input_file> [options]
+python ora2databricks.py convert <input_file> [options]
 ```
 
 **Options:**
 - `--output, -o`: Output file path (prints to stdout if not specified)
+- `--config, -c`: Path to custom rules JSON file ([see custom rules documentation](extra_config/README.md))
 - `--format, -f`: Format output SQL with indentation (default: True)
 - `--verbose, -v`: Show detailed conversion notes and suggestions
 - `--report, -R`: Generate a detailed conversion report after conversion
@@ -72,10 +86,11 @@ python cli.py convert <input_file> [options]
 The `batch` command processes all SQL files in a directory and writes converted files to an output directory:
 
 ```bash
-python cli.py batch <input_directory> <output_directory> [options]
+python ora2databricks.py batch <input_directory> <output_directory> [options]
 ```
 
 **Options:**
+- `--config, -c`: Path to custom rules JSON file ([see custom rules documentation](extra_config/README.md))
 - `--recursive, -r`: Process subdirectories recursively
 - `--report, -R`: Generate a detailed conversion report after batch processing
 - `--report-format`: Format for the conversion report (`text` or `json`, default: text)
@@ -90,10 +105,11 @@ The batch command automatically detects whether each file contains SQL, PL/SQL, 
 Translate a single SQL statement directly from the command line:
 
 ```bash
-python cli.py inline "SELECT SYSDATE FROM DUAL"
+python ora2databricks.py inline "SELECT SYSDATE FROM DUAL"
 ```
 
 **Options:**
+- `--config, -c`: Path to custom rules JSON file
 - `--format, -f`: Format output SQL (default: True)
 - `--verbose, -v`: Show detailed conversion notes and suggestions
 
@@ -485,11 +501,15 @@ oracle2databricks/
 │   ├── function_mappings.py    # Function & type mappings
 │   ├── connect_by_converter.py # CONNECT BY → recursive CTE
 │   ├── function_detector.py    # Oracle function detection
+│   ├── custom_rules.py         # Custom regex-based rules engine
 │   └── report_generator.py     # Conversion report generation
+├── extra_config/
+│   ├── README.md               # Custom rules documentation
+│   └── custom_rules.sample.json # Sample configuration template
 ├── examples/
 │   ├── input/                  # Example Oracle SQL files
 │   └── output/                 # Converted output files
-├── cli.py                      # Command line interface
+├── ora2databricks.py           # Command line interface
 ├── requirements.txt
 └── README.md
 ```
@@ -660,6 +680,35 @@ END;
 $$;
 ```
 
+## Custom Rules for In-House Functions
+
+If your Oracle codebase contains in-house functions or packages that are not covered by the default conversion, you can define custom transformation rules using regex patterns.
+
+See the **[Custom Rules Documentation](extra_config/README.md)** for detailed instructions.
+
+### Quick Example
+
+```bash
+# Generate a configuration file
+python ora2databricks.py init-config --output extra_config/my_rules.json
+
+# Edit the file to add your custom rules
+# Then use it during conversion
+python ora2databricks.py convert input.sql -o output.sql --config extra_config/my_rules.json
+```
+
+### Sample Rule
+
+```json
+{
+  "name": "Convert MY_CORP_FUNC",
+  "pattern": "MY_CORP_FUNC\\s*\\(\\s*([^)]+)\\s*\\)",
+  "replacement": "DATABRICKS_EQUIVALENT(\\1)",
+  "flags": ["IGNORECASE"],
+  "enabled": true
+}
+```
+
 ## Contributing
 
 Contributions are welcome! Areas that could use enhancement:
@@ -668,6 +717,7 @@ Contributions are welcome! Areas that could use enhancement:
 - Improved CONNECT BY to recursive CTE conversion
 - Better package body parsing
 - Support for more PL/SQL constructs
+- Additional custom rule examples
 
 ## License
 
